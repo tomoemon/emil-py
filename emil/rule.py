@@ -120,19 +120,26 @@ class Rule:
                 n.setdefault(de.next, []).append(de)
 
     @staticmethod
-    def from_file(entry_file_path: str, direct_inputtable: Set[str]) -> Rule:
+    def from_text(data: str, direct_inputtable: Set[str]) -> Rule:
         elist = []
-        with open(entry_file_path, encoding="utf-8") as f:
-            for line in f:
-                cols = line.strip("\n").split("\t")
-                if len(cols) == 3:
-                    pass
-                elif len(cols) == 2:
-                    cols = [*cols, ""]
-                else:
-                    raise Exception(f"invalid entry: {line}")
-                e = Entry(input=cols[0], output=cols[1], next=cols[2])
-                if not e.input:
-                    raise Exception(f"invalid input: {e}")
-                elist.append(e)
+        data = data.replace("\r\n", "\n")
+        for line in data.split("\n"):
+            if not line:
+                continue
+            cols = line.split("\t")
+            if len(cols) == 3:
+                pass
+            elif len(cols) == 2:
+                cols = [*cols, ""]
+            else:
+                raise Exception(f"invalid entry: {line}")
+            e = Entry(input=cols[0], output=cols[1], next=cols[2])
+            if not e.input:
+                raise Exception(f"invalid input: {e}")
+            elist.append(e)
         return Rule(elist, direct_inputtable=direct_inputtable)
+
+    @staticmethod
+    def from_file(entry_file_path: str, direct_inputtable: Set[str]) -> Rule:
+        with open(entry_file_path, encoding="utf-8") as f:
+            return Rule.from_text(f.read(), direct_inputtable)

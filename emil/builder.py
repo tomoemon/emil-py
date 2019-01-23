@@ -101,11 +101,9 @@ def build_index_based_inputtable(rule: Rule, text: str, tail: EntryNode, inputta
     #  [ko, co] -> [ltu, xtu] -> [ti, chi]
     #           -> [tt]       -> [ti] ※ tt からは ti にしか遷移できない
     #           -> [cc]       -> [chi] ※ cc からは chi にしか遷移できない
-
-    index = len(text) - 1
-    current_inputtable = inputtables.setdefault(index, set())
     parents = search_parents(rule, text, tail)
     for p in parents:
+        current_inputtable = inputtables.setdefault(len(text)-len(p.entry.output), set())
         if p in current_inputtable:
             return
         current_inputtable.add(p)
@@ -150,6 +148,7 @@ def build_automaton(rule: Rule, text: str):
 
 def main():
     from pprint import pprint
+    p = data.filepath("google_ime_default_roman_table.txt")
     # p = data.filepath("google_ime_default_roman_table.txt")
     p = data.filepath("test_data.txt")
     rule = Rule.from_file(p, {chr(i) for i in range(128) if chr(i).isprintable()})
@@ -157,6 +156,7 @@ def main():
     # text = "こんkっち"
     # text = "っっt"
     text = "さ"
+    # text = "んう"
     # text = "あい"
     at = build_automaton(rule, text)
 
@@ -178,12 +178,17 @@ def main():
 
     # for e, ei, ii in at._state.available_edges:
     #     print(e.entries[0].input)
+    # for c in "XA":
     for c in "XA":
         print("input:", c)
         pprint(at.input(c))
         print("inputted:", at.inputted, "outputted:", at.outputted)
     print("passed_entries:")
     pprint(at._state.passed_entries)
+    #     pprint(at.input(c))
+    #     print("inputted:", at.inputted, "outputted:", at.outputted)
+    # print("passed_entries:")
+    # pprint(at._state.passed_entries)
 
 
 if __name__ == '__main__':

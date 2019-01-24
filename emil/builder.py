@@ -58,6 +58,15 @@ def search_parents(rule: Rule, text: str, tail: EntryNode) -> List[EntryNode]:
 
     for s in text_suffixes:
         for e in rule.output_edict.get(s, []):
+            #  next がある場合（「った」等）は、それが次の input に繋がる場合のみ通す
+            if e.next:
+                if tail_input.startswith(e.next):
+                    if not tail.entry.is_direct_inputtable or rule.allow_direct_next_input:
+                        # 次の Entry が直接入力の場合は、設定により next を使って遷移していいかどうか決める
+                        n = EntryNode(entry=e, child=tail)
+                        current.append(n)
+                continue
+
             if e.has_only_common_prefix:
                 # 単独では確定できない common prefix のみの Entry は末尾の入力には使えない
                 # ※configuarable にするのもあり
@@ -70,15 +79,8 @@ def search_parents(rule: Rule, text: str, tail: EntryNode) -> List[EntryNode]:
                 if any(1 for p in tail_input_prefixes if (e.input + p) in rule.input_edict):
                     continue
 
-            #  next がある場合（「った」等）は、それが次の input に繋がる場合のみ通す
-            if not e.next:
-                n = EntryNode(entry=e, child=None)
-                current.append(n)
-            elif tail_input.startswith(e.next):
-                if not tail.entry.is_direct_inputtable or rule.allow_direct_next_input:
-                    # 次の Entry が直接入力の場合は、設定により next を使って遷移していいかどうか決める
-                    n = EntryNode(entry=e, child=tail)
-                    current.append(n)
+            n = EntryNode(entry=e, child=None)
+            current.append(n)
 
         # 直接入力可能かどうか
         if s in rule.direct_inputtable:

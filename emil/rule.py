@@ -26,7 +26,7 @@ class Entry:
 class DependentEntry(Entry):
     # この Entry を入力する前に入力が必要な Entry のリスト
     dependencies: List[DependentEntry] = dataclasses.field(init=False, default_factory=list)
-    # この Entry を入力する前に入力しても良い Entry のリスト
+    # この Entry を入力する前に入力することも可能な Entry のリスト
     substitutables: List[DependentEntry] = dataclasses.field(init=False, default_factory=list)
     # この Entry の input が他の Entry の common prefix かどうか
     has_only_common_prefix: bool = False

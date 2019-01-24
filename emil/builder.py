@@ -96,16 +96,14 @@ def build_index_based_inputtable(rule: Rule, text: str, tail: EntryNode, inputta
     """表示文字列の入力済み文字数に対応する、そのとき遷移可能な Entry のリストを返す"""
     if not text:
         return
-    # "こっち" のノード列形成例
-    #   こ          っ            ち
-    #  [ko, co] -> [ltu, xtu] -> [ti, chi]
-    #           -> [tt]       -> [ti] ※ tt からは ti にしか遷移できない
-    #           -> [cc]       -> [chi] ※ cc からは chi にしか遷移できない
+
     parents = search_parents(rule, text, tail)
     for p in parents:
+        if p.entry.has_only_common_prefix:
+            p = EntryNode(entry=p.entry, child=tail)
         current_inputtable = inputtables.setdefault(len(text)-len(p.entry.output), set())
         if p in current_inputtable:
-            return
+            continue
         current_inputtable.add(p)
         next_text = text[:len(text)-len(p.entry.output)]
         build_index_based_inputtable(rule, next_text, p, inputtables)
@@ -144,52 +142,3 @@ def build_automaton(rule: Rule, text: str):
     end = Node()
     build_nodes(start, end, 0)
     return Automaton(start, end)
-
-
-def main():
-    from pprint import pprint
-    p = data.filepath("google_ime_default_roman_table.txt")
-    # p = data.filepath("google_ime_default_roman_table.txt")
-    p = data.filepath("test_data.txt")
-    rule = Rule.from_file(p, {chr(i) for i in range(128) if chr(i).isprintable()})
-    rule.allow_direct_next_input = True
-    # text = "こんkっち"
-    # text = "っっt"
-    text = "さ"
-    # text = "んう"
-    # text = "あい"
-    at = build_automaton(rule, text)
-
-    def pnode(n: Node, indent: int):
-        print(indent * " " + f"Node: {id(n) % 1000}")
-        for e in n.next_edges:
-            print(indent * " " + "  Edge: " +
-                  " | ".join(f"{entry.input}/{entry.output}/{entry.next}" for entry in e.entries))
-            pnode(e.next, indent + 2)
-
-    import sys
-    sys.stdout.reconfigure(encoding='utf-8')
-    # pnode(at.initial_node, 0)
-
-    from .viz import render
-    r = render(at)
-    with open("dot.txt", mode="w", encoding="utf-8") as fp:
-        fp.write(r)
-
-    # for e, ei, ii in at._state.available_edges:
-    #     print(e.entries[0].input)
-    # for c in "XA":
-    for c in "XA":
-        print("input:", c)
-        pprint(at.input(c))
-        print("inputted:", at.inputted, "outputted:", at.outputted)
-    print("passed_entries:")
-    pprint(at._state.passed_entries)
-    #     pprint(at.input(c))
-    #     print("inputted:", at.inputted, "outputted:", at.outputted)
-    # print("passed_entries:")
-    # pprint(at._state.passed_entries)
-
-
-if __name__ == '__main__':
-    main()

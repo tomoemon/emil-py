@@ -79,6 +79,10 @@ def search_parents(rule: Rule, text: str, tail: EntryNode) -> List[EntryNode]:
                 if any(1 for p in tail_input_prefixes if (e.input + p) in rule.input_edict):
                     continue
 
+                n = EntryNode(entry=e, child=tail)
+                current.append(n)
+                continue
+
             n = EntryNode(entry=e, child=None)
             current.append(n)
 
@@ -101,8 +105,6 @@ def build_index_based_inputtable(rule: Rule, text: str, tail: EntryNode, inputta
 
     parents = search_parents(rule, text, tail)
     for p in parents:
-        if p.entry.has_only_common_prefix:
-            p = EntryNode(entry=p.entry, child=tail)
         current_inputtable = inputtables.setdefault(len(text)-len(p.entry.output), set())
         if p in current_inputtable:
             continue

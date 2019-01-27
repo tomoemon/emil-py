@@ -48,11 +48,12 @@ class Rule:
     dependent_entry_list: List[DependentEntry] = dataclasses.field(init=False)
     input_edict: Dict[str, DependentEntry] = dataclasses.field(init=False)
     output_edict: Dict[str, List[DependentEntry]] = dataclasses.field(init=False)
+    output_with_next_edict:  Dict[str, List[DependentEntry]] = dataclasses.field(init=False)
     max_output_length: int = 0
     __only_next_edict: Dict[str, List[DependentEntry]] = dataclasses.field(init=False)
 
     def __post_init__(self):
-        self.max_output_length = max(len(e.output) for e in self.elist)
+        self.max_output_length = max(len(e.output) + len(e.next) for e in self.elist)
         self.make_dict()
         self.fill_dependencies()
         self.fill_substitutables()
@@ -104,13 +105,14 @@ class Rule:
         o = self.output_edict = {}
         n = self.__only_next_edict = {}
         d = self.dependent_entry_list = []
+        w = self.output_with_next_edict = {}
         for e in self.elist:
             if not e.input:
                 raise Exception(f"input is required: {e}")
             if not e.output and not e.next:
-                raise Exception(f"either either output or next is required: {e}")
-            if e.input in i and i[e.input].output == e.output:
-                raise Exception(f"duplicate entry: {e}")
+                raise Exception(f"either output or next is required: {e}")
+            if e.input in i:
+                raise Exception(f"duplicate input entry: {e}")
             de = DependentEntry(input=e.input, output=e.output, next=e.next)
             i[e.input] = de
             d.append(de)
@@ -118,6 +120,8 @@ class Rule:
                 o.setdefault(de.output, []).append(de)
             if not de.output and de.next:
                 n.setdefault(de.next, []).append(de)
+            if de.next:
+                w.setdefault(de.output + de.next, []).append(de)
 
     @staticmethod
     def from_text(data: str, direct_inputtable: Set[str]) -> Rule:

@@ -61,7 +61,7 @@ def search_parents(rule: Rule, text: str, tail: EntryNode) -> List[EntryNode]:
             #  next がある場合（「った」等）は、それが次の input に繋がる場合のみ通す
             if e.next:
                 if tail_input.startswith(e.next):
-                    if not tail.entry.is_direct_inputtable or rule.allow_direct_next_input:
+                    if not tail.entry.is_direct_inputtable:
                         # 次の Entry が直接入力の場合は、設定により next を使って遷移していいかどうか決める
                         n = EntryNode(entry=e, child=tail)
                         current.append(n)
@@ -84,6 +84,29 @@ def search_parents(rule: Rule, text: str, tail: EntryNode) -> List[EntryNode]:
                 continue
 
             n = EntryNode(entry=e, child=None)
+            current.append(n)
+
+        for e in rule.output_with_next_edict.get(s, []):
+            # next を output として扱ったときに入力候補にできるかチェックする
+            #
+            # 出題: "っt"
+            # entry: tt/っ/t
+            # tt で打てるようにするかどうか
+            # 出題: "かち"
+            # entry: k//か
+            # entry: t//ち
+            # entry: hh/か/ち
+            # kt OR hh で打てるようにする
+            # TODO: いずれの Entry からも依存されてない場合のみ使える、とかにしたほうが良いかも
+            # j		か
+            # かg		かが
+            # z	が
+            d = dataclasses.replace(e, next="", output=e.output + e.next)
+            d.dependencies = e.dependencies
+            d.substitutables = e.substitutables
+            d.has_only_common_prefix = e.has_only_common_prefix
+            d.is_direct_inputtable = e.is_direct_inputtable
+            n = EntryNode(entry=d, child=None)
             current.append(n)
 
         # 直接入力可能かどうか
